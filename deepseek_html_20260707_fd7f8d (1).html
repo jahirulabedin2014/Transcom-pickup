@@ -1,0 +1,3474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcom · Key Account Pickup</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- html2canvas for screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+    </script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+    </script>
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        .hardware-accelerated {
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0b2a3b 0%, #1b4f6e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 48px;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 30px 32px;
+            width: 100%;
+            max-width: 1280px;
+            transition: none;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        /* ===== LOGIN ===== */
+        #loginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 30, 40, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            transition: opacity 0.3s ease;
+            will-change: opacity;
+        }
+        #loginOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .login-box {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 60px;
+            padding: 45px 40px;
+            width: 360px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            transform: translateZ(0);
+            will-change: transform;
+        }
+        .login-box h2 {
+            color: #fff;
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .login-box .sub {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 14px 18px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            font-size: 15px;
+            outline: 1px solid rgba(255, 255, 255, 0.1);
+            transition: outline 0.2s ease;
+        }
+        .login-box input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .login-box input:focus {
+            outline: 1px solid #7fc9ff;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 40px;
+            background: #4d9fff;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 18px;
+            transition: background 0.2s ease, transform 0.15s ease;
+            box-shadow: 0 6px 14px rgba(0, 80, 200, 0.4);
+            will-change: transform;
+        }
+        .login-btn:hover {
+            background: #3a8aee;
+            transform: scale(1.02);
+        }
+        .login-error {
+            color: #ffa8a8;
+            font-size: 13px;
+            margin-top: 12px;
+            min-height: 20px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 18px;
+            gap: 12px;
+            will-change: transform;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .brand i {
+            font-size: 34px;
+            color: #b3e0ff;
+            text-shadow: 0 0 12px rgba(70, 180, 255, 0.4);
+        }
+        .brand h1 {
+            font-weight: 300;
+            font-size: 28px;
+            letter-spacing: 1px;
+            color: white;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .brand span {
+            font-weight: 500;
+            color: #b3daff;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 40px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(4px);
+            will-change: transform;
+        }
+        .nav-item {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 8px 18px;
+            border-radius: 30px;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            position: relative;
+            white-space: nowrap;
+            will-change: transform, background;
+            transform: translateZ(0);
+        }
+        .nav-item i {
+            font-size: 14px;
+            opacity: 0.7;
+            transition: opacity 0.15s ease;
+        }
+        .nav-item:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .nav-item:hover i {
+            opacity: 1;
+        }
+        .nav-item.active {
+            color: #ffffff;
+            background: rgba(77, 159, 255, 0.25);
+            box-shadow: 0 2px 12px rgba(77, 159, 255, 0.15);
+        }
+        .nav-item.active i {
+            opacity: 1;
+            color: #b3daff;
+        }
+        .nav-item.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            cursor: default;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            padding: 6px 16px 6px 12px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .user-info i {
+            color: #83c9ff;
+            font-size: 16px;
+        }
+        .user-info .username {
+            font-weight: 400;
+            color: white;
+        }
+        .logoff-btn {
+            background: rgba(255, 80, 80, 0.12);
+            border: 1px solid rgba(255, 80, 80, 0.15);
+            color: #ff8a8a;
+            padding: 6px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.15s ease, transform 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            will-change: transform;
+        }
+        .logoff-btn:hover {
+            background: rgba(255, 80, 80, 0.25);
+            transform: scale(1.02);
+        }
+
+        /* ===== INFO GRID ===== */
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 14px 20px;
+            border-radius: 40px;
+            margin-bottom: 28px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            align-items: center;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+        }
+        .info-item i {
+            color: #83c9ff;
+            width: 16px;
+            font-size: 14px;
+        }
+        .info-item label {
+            font-weight: 300;
+            letter-spacing: 0.3px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .info-item input {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 6px 14px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s ease, background 0.15s ease;
+            width: 120px;
+        }
+        .info-item input:focus {
+            border-color: #6bb3ff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .info-item input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .info-item.date input {
+            width: 130px;
+        }
+        .info-item.time input {
+            width: 110px;
+        }
+        .info-item.report-id input {
+            width: 160px;
+            background: rgba(255, 215, 0, 0.08);
+            border-color: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            cursor: default;
+        }
+        .info-item.report-id input:focus {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.12);
+        }
+        .info-item.report-id i {
+            color: #ffd700;
+        }
+
+        /* ===== TABLE ===== */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 28px;
+            background: rgba(0, 0, 0, 0.08);
+            padding: 6px 4px 4px 4px;
+            backdrop-filter: blur(4px);
+            margin-bottom: 24px;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #f0f5fa;
+            font-size: 14px;
+            min-width: 700px;
+        }
+        th {
+            text-align: left;
+            padding: 14px 8px 10px 12px;
+            font-weight: 400;
+            letter-spacing: 0.8px;
+            color: #b6d9ff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        td {
+            padding: 8px 6px 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            vertical-align: middle;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        td input,
+        td select {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 30px;
+            padding: 7px 12px;
+            width: 100%;
+            min-width: 70px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        td select option {
+            background: #1b3a4a;
+            color: white;
+        }
+        td input:focus,
+        td select:focus {
+            border-color: #5faaff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        td input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .serial-col {
+            color: #aac9ff;
+            font-weight: 400;
+            text-align: center;
+            width: 45px;
+        }
+        .delete-col {
+            text-align: center;
+            width: 55px;
+        }
+        .delete-btn {
+            background: rgba(255, 80, 80, 0.15);
+            border: 1px solid rgba(255, 80, 80, 0.25);
+            color: #ff8a8a;
+            border-radius: 30px;
+            padding: 4px 10px;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+            font-size: 12px;
+            will-change: transform;
+        }
+        .delete-btn:hover {
+            background: rgba(255, 80, 80, 0.3);
+            transform: scale(1.05);
+        }
+        .total-row td {
+            padding-top: 14px;
+            font-weight: 500;
+            color: #b3e0ff;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .total-row span {
+            background: rgba(0, 30, 60, 0.3);
+            padding: 4px 18px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+        }
+        .required-star {
+            color: #ff7a7a;
+            margin-left: 3px;
+        }
+        .field-error {
+            border-color: #ff5a5a !important;
+            box-shadow: 0 0 0 1px #ff5a5a;
+        }
+
+        /* ===== BUTTONS ===== */
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(8px);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            will-change: transform;
+            transform: translateZ(0);
+        }
+        .btn i {
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #3f8eff;
+            border: 1px solid #6aafff;
+            box-shadow: 0 6px 18px rgba(40, 120, 255, 0.3);
+        }
+        .btn-primary:hover {
+            background: #2f7aee;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #1f9d6b;
+            border-color: #3bcb8a;
+        }
+        .btn-success:hover {
+            background: #1a8a5d;
+            transform: translateY(-2px);
+        }
+        .btn-warning {
+            background: #cb8b2f;
+            border-color: #f5b84a;
+        }
+        .btn-warning:hover {
+            background: #b87a24;
+            transform: translateY(-2px);
+        }
+        .btn-add {
+            background: rgba(100, 200, 255, 0.15);
+            border-color: rgba(100, 200, 255, 0.3);
+        }
+        .btn-add:hover {
+            background: rgba(100, 200, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        .btn-preview {
+            background: rgba(200, 150, 255, 0.15);
+            border-color: rgba(200, 150, 255, 0.3);
+        }
+        .btn-preview:hover {
+            background: rgba(200, 150, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        .btn-photo {
+            background: rgba(100, 255, 180, 0.15);
+            border-color: rgba(100, 255, 180, 0.3);
+        }
+        .btn-photo:hover {
+            background: rgba(100, 255, 180, 0.25);
+            transform: translateY(-2px);
+        }
+        .btn-copy {
+            background: rgba(100, 150, 255, 0.15);
+            border-color: rgba(100, 150, 255, 0.3);
+        }
+        .btn-copy:hover {
+            background: rgba(100, 150, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        .btn-excel {
+            background: rgba(33, 150, 83, 0.2);
+            border-color: rgba(33, 150, 83, 0.3);
+        }
+        .btn-excel:hover {
+            background: rgba(33, 150, 83, 0.35);
+            transform: translateY(-2px);
+        }
+        .btn-pdf {
+            background: rgba(220, 50, 50, 0.2);
+            border-color: rgba(220, 50, 50, 0.3);
+        }
+        .btn-pdf:hover {
+            background: rgba(220, 50, 50, 0.35);
+            transform: translateY(-2px);
+        }
+        .btn-word {
+            background: rgba(43, 114, 200, 0.2);
+            border-color: rgba(43, 114, 200, 0.3);
+        }
+        .btn-word:hover {
+            background: rgba(43, 114, 200, 0.35);
+            transform: translateY(-2px);
+        }
+        .btn-reprint-primary {
+            background: #f5a623;
+            border-color: #f5c842;
+            color: #1a1a2e;
+        }
+        .btn-reprint-primary:hover {
+            background: #e09515;
+            transform: translateY(-2px);
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 11px;
+        }
+        .btn-xs {
+            padding: 4px 10px;
+            font-size: 10px;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            will-change: opacity;
+        }
+        .modal-overlay.active {
+            display: flex;
+            animation: modalFadeIn 0.25s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-box {
+            background: rgba(20, 50, 70, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 40px;
+            max-width: 960px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-box h2 {
+            color: white;
+            font-weight: 300;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 15px;
+        }
+        .modal-box h2 i {
+            color: #b3daff;
+            margin-right: 12px;
+        }
+        .modal-close {
+            background: rgba(255, 80, 80, 0.15);
+            border: 1px solid rgba(255, 80, 80, 0.2);
+            color: #ff8a8a;
+            border-radius: 30px;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.15s ease;
+            float: right;
+        }
+        .modal-close:hover {
+            background: rgba(255, 80, 80, 0.3);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            float: right;
+            margin-right: 12px;
+        }
+        .modal-actions .btn {
+            padding: 8px 18px;
+            font-size: 13px;
+        }
+
+        /* ===== PREVIEW ===== */
+        .preview-details {
+            color: #e8f0f8;
+            font-size: 14px;
+            line-height: 1.8;
+            clear: both;
+            padding-top: 10px;
+        }
+        .preview-header-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 30px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .preview-header-grid .label {
+            color: #8ab8e0;
+            font-weight: 300;
+            min-width: 100px;
+            display: inline-block;
+        }
+        .preview-header-grid .value {
+            color: white;
+            font-weight: 400;
+        }
+        .preview-header-grid .right-group {
+            text-align: right;
+        }
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .preview-table th {
+            color: #8ab8e0;
+            font-weight: 400;
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .preview-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #e0eaf5;
+        }
+        .preview-total {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-weight: 500;
+            color: #b3e0ff;
+        }
+        .preview-section-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #b6d9ff;
+            margin: 15px 0 8px 0;
+            letter-spacing: 0.5px;
+        }
+        .preview-section-title i {
+            margin-right: 8px;
+            color: #83c9ff;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(20, 50, 70, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px 24px;
+            color: white;
+            font-size: 14px;
+            z-index: 2000;
+            transform: translateY(100px) translateZ(0);
+            opacity: 0;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 400px;
+            will-change: transform, opacity;
+        }
+        .toast.show {
+            transform: translateY(0) translateZ(0);
+            opacity: 1;
+        }
+        .toast.success i {
+            color: #4ade80;
+        }
+        .toast.error i {
+            color: #f87171;
+        }
+        .toast.info i {
+            color: #60a5fa;
+        }
+        .toast .toast-icon {
+            font-size: 20px;
+        }
+
+        /* ===== ADMIN PANEL (User Management) ===== */
+        .admin-panel {
+            margin-top: 20px;
+            padding: 24px 28px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 32px;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: none;
+            will-change: transform;
+        }
+        .admin-panel.active {
+            display: block;
+            animation: fadeSlideIn 0.25s ease;
+        }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .admin-panel h3 {
+            color: #b6d9ff;
+            font-weight: 400;
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 0.5px;
+        }
+        .admin-panel h3 i {
+            color: #83c9ff;
+        }
+        .admin-panel .section-sub {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            font-weight: 300;
+            margin-left: 8px;
+        }
+
+        .user-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px 24px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px 24px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 24px;
+        }
+        .user-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .user-form .form-group label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .user-form .form-group label .required-star {
+            color: #ff7a7a;
+        }
+        .user-form .form-group input,
+        .user-form .form-group select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 10px 18px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        }
+        .user-form .form-group select option {
+            background: #1b3a4a;
+            color: white;
+        }
+        .user-form .form-group input:focus,
+        .user-form .form-group select:focus {
+            border-color: #6bb3ff;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 3px rgba(107, 179, 255, 0.1);
+        }
+        .user-form .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+        .user-form .form-group input.field-error {
+            border-color: #ff5a5a;
+            box-shadow: 0 0 0 1px #ff5a5a;
+        }
+        .user-form .form-group .error-msg {
+            color: #ff7a7a;
+            font-size: 11px;
+            min-height: 16px;
+        }
+        .user-form .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .user-form .form-actions .btn {
+            padding: 10px 28px;
+        }
+
+        .permission-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px 16px;
+            background: rgba(255,255,255,0.02);
+            padding: 12px 16px;
+            border-radius: 20px;
+            margin-top: 6px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        .permission-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+        .permission-item input[type="checkbox"] {
+            accent-color: #4d9fff;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            filter: drop-shadow(0 0 2px rgba(77,159,255,0.3));
+        }
+        .permission-item label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .user-log-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 8px;
+        }
+        .user-list,
+        .log-list {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 18px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .user-list h4,
+        .log-list h4 {
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+            font-size: 14px;
+            margin-bottom: 14px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-list h4 i,
+        .log-list h4 i {
+            color: #83c9ff;
+        }
+        .user-list table,
+        .log-list table {
+            min-width: unset;
+            font-size: 13px;
+            background: transparent;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .user-list table th,
+        .log-list table th {
+            background: rgba(77, 159, 255, 0.08);
+            color: #b6d9ff;
+            font-weight: 400;
+            padding: 8px 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .user-list table td,
+        .log-list table td {
+            padding: 7px 12px;
+            color: #e0eaf5;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .user-list table tr:last-child td,
+        .log-list table tr:last-child td {
+            border-bottom: none;
+        }
+        .user-list .delete-user-btn {
+            background: rgba(255, 80, 80, 0.12);
+            border: 1px solid rgba(255, 80, 80, 0.15);
+            color: #ff8a8a;
+            border-radius: 20px;
+            padding: 2px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.15s ease;
+        }
+        .user-list .delete-user-btn:hover {
+            background: rgba(255, 80, 80, 0.25);
+        }
+        .log-list .log-badge {
+            background: rgba(77, 159, 255, 0.12);
+            border-radius: 12px;
+            padding: 1px 10px;
+            font-size: 11px;
+            color: #8ab8e0;
+            display: inline-block;
+            font-family: monospace;
+        }
+        .log-list .log-ip {
+            font-family: monospace;
+            color: #aac9ff;
+        }
+        .log-empty {
+            color: rgba(255, 255, 255, 0.3);
+            padding: 16px 0;
+            text-align: center;
+            font-style: italic;
+            font-size: 13px;
+        }
+        .log-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ===== REPORTS PANEL ===== */
+        .reports-panel {
+            margin-top: 20px;
+            padding: 24px 28px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 32px;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: none;
+            will-change: transform;
+        }
+        .reports-panel.active {
+            display: block;
+            animation: fadeSlideIn 0.25s ease;
+        }
+
+        .reports-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 30px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .reports-tab {
+            padding: 8px 24px;
+            border-radius: 26px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            will-change: transform;
+        }
+        .reports-tab:hover {
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .reports-tab.active {
+            color: #ffffff;
+            background: rgba(77, 159, 255, 0.2);
+            box-shadow: 0 2px 12px rgba(77, 159, 255, 0.1);
+        }
+        .reports-tab i {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        .reports-tab.active i {
+            opacity: 1;
+            color: #b3daff;
+        }
+
+        .reports-tab-content {
+            display: none;
+        }
+        .reports-tab-content.active {
+            display: block;
+            animation: fadeSlideIn 0.2s ease;
+        }
+
+        .report-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px 20px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 18px 22px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 20px;
+        }
+        .report-params .param-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .report-params .param-group label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .report-params .param-group input,
+        .report-params .param-group select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 8px 14px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s ease, background 0.15s ease;
+            width: 100%;
+        }
+        .report-params .param-group input:focus,
+        .report-params .param-group select:focus {
+            border-color: #6bb3ff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .report-params .param-group select option {
+            background: #1b3a4a;
+            color: white;
+        }
+        .report-params .param-group input[type="date"] {
+            color-scheme: dark;
+        }
+        .report-params .param-actions {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            padding-bottom: 2px;
+        }
+        .report-params .param-actions .btn {
+            padding: 8px 22px;
+            font-size: 12px;
+        }
+
+        .report-preview-wrap {
+            overflow-x: auto;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 6px 4px 4px 4px;
+            backdrop-filter: blur(4px);
+            margin-top: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .report-preview-wrap table {
+            min-width: 800px;
+            font-size: 13px;
+        }
+        .report-preview-wrap table th {
+            background: rgba(77, 159, 255, 0.12);
+            color: #b6d9ff;
+            font-weight: 400;
+            padding: 10px 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .report-preview-wrap table td {
+            padding: 8px 12px;
+            color: #e0eaf5;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+        }
+        .report-preview-wrap table tr:last-child td {
+            border-bottom: none;
+        }
+        .report-preview-wrap .report-total-row td {
+            padding-top: 12px;
+            font-weight: 500;
+            color: #b3e0ff;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .report-empty-preview {
+            color: rgba(255, 255, 255, 0.3);
+            padding: 30px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .reports-export-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0 10px 0;
+            align-items: center;
+        }
+        .reports-export-actions .btn {
+            padding: 8px 18px;
+            font-size: 12px;
+        }
+        .reports-export-actions .label-export {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            margin-right: 6px;
+        }
+
+        /* ===== REPRINT ===== */
+        .reprint-main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px 32px;
+        }
+        .reprint-col {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .reprint-section {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 20px;
+            padding: 18px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .reprint-section h4 {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .reprint-section h4 i {
+            color: #83c9ff;
+            margin-right: 8px;
+        }
+
+        .reprint-search-area {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .reprint-search-area input {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 10px 18px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .reprint-search-area input:focus {
+            border-color: #6bb3ff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .reprint-search-area input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .reprint-found-content {
+            padding: 8px 0;
+        }
+        .reprint-found-content .report-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 16px;
+            padding: 4px 0;
+        }
+        .reprint-found-content .report-detail .label {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .reprint-found-content .report-detail .value {
+            color: white;
+        }
+        .reprint-found-content .report-detail .value.gold {
+            color: #ffd700;
+            font-weight: 500;
+        }
+
+        .reprint-actions-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .reprint-actions-group .btn {
+            padding: 6px 14px;
+            font-size: 11px;
+        }
+
+        .reprint-report-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: background 0.15s ease;
+        }
+        .reprint-report-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .reprint-report-item .report-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .reprint-report-item .report-info .rid {
+            color: #ffd700;
+            font-weight: 500;
+            font-size: 13px;
+            font-family: monospace;
+        }
+        .reprint-report-item .report-info .rdate {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+        }
+        .reprint-report-item .report-info .rname {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+        .reprint-report-item .report-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .reprint-report-item .report-actions .btn {
+            padding: 4px 10px;
+            font-size: 10px;
+        }
+        .reprint-report-item .report-actions .btn i {
+            font-size: 11px;
+        }
+
+        .reprint-empty {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 13px;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .reprint-empty i {
+            margin-right: 8px;
+        }
+
+        .reprint-footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+        }
+        .reprint-footer .weather {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .reprint-footer .weather i {
+            color: #f5b84a;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            .user-log-section {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .user-form {
+                grid-template-columns: 1fr 1fr;
+            }
+            .permission-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .report-params {
+                grid-template-columns: 1fr 1fr;
+            }
+            .reprint-main-grid {
+                grid-template-columns: 1fr;
+            }
+            .reprint-report-item {
+                flex-direction: column;
+                gap: 8px;
+                align-items: stretch;
+            }
+            .reprint-report-item .report-actions {
+                justify-content: flex-start;
+            }
+            .reprint-found-content .report-detail {
+                grid-template-columns: 1fr;
+            }
+            .nav-menu {
+                flex-wrap: wrap;
+                padding: 6px;
+                border-radius: 20px;
+            }
+            .nav-item {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            .reports-tabs {
+                flex-wrap: wrap;
+            }
+            .reports-tab {
+                padding: 6px 14px;
+                font-size: 12px;
+                flex: 1;
+                justify-content: center;
+            }
+            .preview-header-grid {
+                grid-template-columns: 1fr;
+            }
+            .preview-header-grid .right-group {
+                text-align: left;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .glass-card {
+                padding: 20px 16px;
+                border-radius: 32px;
+            }
+            .info-grid {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .info-item input {
+                width: 100%;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-left {
+                flex-wrap: wrap;
+            }
+            .header-right {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+            .nav-menu {
+                flex-wrap: wrap;
+                padding: 6px;
+                width: 100%;
+            }
+            .nav-item {
+                padding: 6px 12px;
+                font-size: 12px;
+                flex: 1;
+                justify-content: center;
+            }
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn {
+                justify-content: center;
+            }
+            .modal-box {
+                padding: 20px;
+                margin: 10px;
+                max-height: 90vh;
+            }
+            .modal-actions {
+                float: none;
+                margin-right: 0;
+                margin-top: 10px;
+                justify-content: flex-end;
+            }
+            .user-form {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+            .permission-grid {
+                grid-template-columns: 1fr;
+            }
+            .user-form .form-actions {
+                flex-wrap: wrap;
+            }
+            .user-log-section {
+                grid-template-columns: 1fr;
+            }
+            .report-params {
+                grid-template-columns: 1fr;
+            }
+            .report-params .param-actions {
+                flex-wrap: wrap;
+            }
+            .reports-export-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .reports-export-actions .btn {
+                justify-content: center;
+            }
+            .reprint-main-grid {
+                grid-template-columns: 1fr;
+            }
+            .reprint-footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .reprint-search-area {
+                flex-direction: column;
+            }
+            .reprint-search-area input {
+                min-width: unset;
+            }
+            .reports-tabs {
+                flex-wrap: wrap;
+            }
+            .reports-tab {
+                padding: 6px 12px;
+                font-size: 11px;
+                flex: 1;
+                justify-content: center;
+            }
+            .login-box {
+                width: 90%;
+                padding: 30px 20px;
+                border-radius: 40px;
+            }
+            .brand h1 {
+                font-size: 22px;
+            }
+            .brand i {
+                font-size: 28px;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .glass-card {
+                background: white;
+                backdrop-filter: none;
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            #loginOverlay {
+                display: none;
+            }
+            .btn,
+            .actions .btn,
+            .delete-btn,
+            .header-link,
+            .logoff-btn,
+            .nav-menu,
+            .reports-tabs {
+                display: none !important;
+            }
+            .info-item input {
+                border: 1px solid #aaa;
+                color: black;
+                background: #f0f0f0;
+            }
+            table {
+                color: #111;
+            }
+            th {
+                color: #1a3a5a;
+            }
+            td input,
+            td select {
+                border: 1px solid #bbb;
+                color: #111;
+                background: #f8f8f8;
+            }
+            .brand h1 {
+                color: #0b2a3b;
+            }
+            .total-row span {
+                background: #e0e0e0;
+                color: #111;
+            }
+            .modal-overlay {
+                display: none !important;
+            }
+            .user-info {
+                border: 1px solid #aaa;
+                background: #f0f0f0;
+                color: #111;
+            }
+            .user-info .username {
+                color: #111;
+            }
+            .admin-panel,
+            .reports-panel {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginOverlay">
+        <div class="login-box hardware-accelerated">
+            <h2><i class="fas fa-lock" style="margin-right: 12px;"></i>Transcom</h2>
+            <div class="sub">Key Account · Pickup</div>
+            <input type="text" id="loginUser" placeholder="Username" value="admin">
+            <input type="password" id="loginPass" placeholder="Password" value="1234">
+            <button class="login-btn" id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+            <div id="loginError" class="login-error"></div>
+        </div>
+    </div>
+
+    <!-- PREVIEW MODAL -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal-box hardware-accelerated">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:15px;">
+                <h2 style="margin:0; border:none; padding:0;"><i class="fas fa-eye"></i> Pickup Details Preview</h2>
+                <div class="modal-actions">
+                    <button class="btn btn-photo" id="savePhotoBtn"><i class="fas fa-camera"></i> Save as Photo</button>
+                    <button class="btn btn-copy" id="copyPhotoBtn"><i class="fas fa-copy"></i> Copy Photo</button>
+                    <button class="modal-close" id="closePreview"><i class="fas fa-times"></i> Close</button>
+                </div>
+            </div>
+            <div id="previewContent" class="preview-details"></div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast">
+        <span class="toast-icon"><i class="fas fa-check-circle"></i></span>
+        <span class="toast-message">Copied to clipboard!</span>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div class="glass-card hardware-accelerated" id="mainApp">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-left">
+                <div class="brand">
+                    <i class="fas fa-truck-loading"></i>
+                    <h1><span>Transcom</span> Beverages</h1>
+                </div>
+                <nav class="nav-menu" id="mainNav">
+                    <a href="#" class="nav-item active" data-page="vehicle"><i class="fas fa-truck"></i> Vehicle System</a>
+                    <a href="#" class="nav-item" data-page="admin"><i class="fas fa-user-shield"></i> Sys OPS</a>
+                    <a href="#" class="nav-item" data-page="reports"><i class="fas fa-file-alt"></i> Reports</a>
+                </nav>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="username" id="displayUsername">Admin</span>
+                </div>
+                <button class="logoff-btn" id="logoffBtn"><i class="fas fa-sign-out-alt"></i> Log off</button>
+            </div>
+        </div>
+
+        <!-- Vehicle System Content -->
+        <div id="vehicleContent">
+            <div class="info-grid">
+                <div class="info-item report-id"><i class="fas fa-hashtag"></i><label>Report ID</label><input type="text" id="reportId" readonly placeholder="Auto-generated"></div>
+                <div class="info-item date"><i class="fas fa-calendar-day"></i><label>Date</label><input type="date" id="pickupDate" value="2026-07-06"></div>
+                <div class="info-item"><i class="fas fa-user-tie"></i><label>Salesman</label><input type="text" id="salesmanName" placeholder="Name" value="John Doe"></div>
+                <div class="info-item"><i class="fas fa-truck"></i><label>Vehicle No.</label><input type="text" id="vehicleNo" placeholder="ABC-123" value="DHA-789"></div>
+                <div class="info-item"><i class="fas fa-phone-alt"></i><label>Mobile</label><input type="text" id="mobileNo" placeholder="01XXXXXXXXX" value="01712345678"></div>
+                <div class="info-item time"><i class="fas fa-clock"></i><label>Exit Time</label><input type="time" id="exitTime" value="18:30"></div>
+            </div>
+
+            <div class="table-wrap">
+                <table id="pickupTable">
+                    <thead>
+                        <tr>
+                            <th style="width:45px;">SL</th>
+                            <th style="min-width:160px;">Customer Name <span class="required-star">*</span></th>
+                            <th style="min-width:160px;">Address</th>
+                            <th style="min-width:100px;">Raw CS Qty</th>
+                            <th style="width:55px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="3" style="text-align:right; padding-right:20px;"><i class="fas fa-calculator"></i> Total Raw CS</td>
+                            <td id="totalRawCs">0</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-add" id="addRowBtn"><i class="fas fa-plus-circle"></i> Add Row</button>
+                <button class="btn btn-preview" id="previewBtn"><i class="fas fa-eye"></i> Preview</button>
+                <button class="btn btn-success" id="saveBtn"><i class="fas fa-save"></i> Save</button>
+                <button class="btn btn-primary" id="printBtn"><i class="fas fa-print"></i> Print</button>
+                <button class="btn btn-warning" id="resetBtn"><i class="fas fa-undo-alt"></i> Reset</button>
+            </div>
+        </div>
+
+        <!-- SYS OPS PANEL (User Management with Permissions) -->
+        <div class="admin-panel" id="adminPanel">
+            <h3><i class="fas fa-users-cog"></i> User Management <span class="section-sub">· system operations</span></h3>
+
+            <div class="user-form">
+                <div class="form-group">
+                    <label>User ID <span class="required-star">*</span></label>
+                    <input type="text" id="userId" placeholder="Enter User ID">
+                    <div class="error-msg" id="userIdError"></div>
+                </div>
+                <div class="form-group">
+                    <label>Password <span class="required-star">*</span></label>
+                    <input type="password" id="userPassword" placeholder="Enter Password">
+                    <div class="error-msg" id="passwordError"></div>
+                </div>
+                <div class="form-group">
+                    <label>Full Name <span class="required-star">*</span></label>
+                    <input type="text" id="userFullName" placeholder="Enter Full Name">
+                    <div class="error-msg" id="fullNameError"></div>
+                </div>
+                <!-- PERMISSIONS -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label style="text-transform:none; letter-spacing:0.5px; color:rgba(255,255,255,0.6);">Module Permissions</label>
+                    <div class="permission-grid">
+                        <div class="permission-item">
+                            <input type="checkbox" id="permVehicle" checked>
+                            <label for="permVehicle"><i class="fas fa-truck" style="color:#83c9ff;width:18px;"></i> Vehicle System</label>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" id="permAdmin" checked>
+                            <label for="permAdmin"><i class="fas fa-user-shield" style="color:#83c9ff;width:18px;"></i> Sys OPS</label>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" id="permReports" checked>
+                            <label for="permReports"><i class="fas fa-file-alt" style="color:#83c9ff;width:18px;"></i> Reports</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-success" id="addUserBtn"><i class="fas fa-user-plus"></i> Add User</button>
+                    <button class="btn btn-warning" id="resetUserFormBtn"><i class="fas fa-undo-alt"></i> Reset</button>
+                </div>
+            </div>
+
+            <div class="user-log-section">
+                <div class="user-list">
+                    <h4><i class="fas fa-list"></i> Existing Users</h4>
+                    <div id="userListContainer">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User ID</th>
+                                    <th>Full Name</th>
+                                    <th style="text-align:center;">Permissions</th>
+                                    <th style="text-align:center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="log-list">
+                    <h4><i class="fas fa-history"></i> Login Logs</h4>
+                    <div id="logContainer">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Time</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORTS PANEL -->
+        <div class="reports-panel" id="reportsPanel">
+            <h3><i class="fas fa-file-alt"></i> Reports <span class="section-sub">· pickup & reprint</span></h3>
+
+            <div class="reports-tabs">
+                <button class="reports-tab active" data-tab="view-reports"><i class="fas fa-eye"></i> View Reports</button>
+                <button class="reports-tab" data-tab="reprint-reports"><i class="fas fa-print"></i> Reprint Reports</button>
+            </div>
+
+            <!-- Tab 1: View Reports -->
+            <div class="reports-tab-content active" id="tab-view-reports">
+                <div class="report-params">
+                    <div class="param-group">
+                        <label><i class="far fa-calendar-alt"></i> Beginning Date</label>
+                        <input type="date" id="reportDateFrom" value="2026-07-06">
+                    </div>
+                    <div class="param-group">
+                        <label><i class="far fa-calendar-alt"></i> Ending Date</label>
+                        <input type="date" id="reportDateTo" value="2026-07-06">
+                    </div>
+                    <div class="param-group">
+                        <label><i class="fas fa-search"></i> Report ID</label>
+                        <input type="text" id="reportIdFilter" placeholder="Search by Report ID">
+                    </div>
+                    <div class="param-group param-actions">
+                        <button class="btn btn-primary" id="reportPreviewBtn"><i class="fas fa-eye"></i> Preview</button>
+                        <button class="btn btn-warning" id="clearReportFilter"><i class="fas fa-times"></i> Clear</button>
+                    </div>
+                </div>
+
+                <div class="reports-export-actions">
+                    <span class="label-export"><i class="fas fa-download"></i> Export:</span>
+                    <button class="btn btn-excel" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Excel</button>
+                    <button class="btn btn-pdf" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> PDF</button>
+                    <button class="btn btn-word" id="exportWordBtn"><i class="fas fa-file-word"></i> Word</button>
+                </div>
+
+                <div class="report-preview-wrap" id="reportPreviewWrap">
+                    <div id="reportPreviewContent">
+                        <div class="report-empty-preview">
+                            <i class="fas fa-info-circle"></i> Please select date range and click "Preview" to view reports.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Reprint Reports -->
+            <div class="reports-tab-content" id="tab-reprint-reports">
+                <div class="reprint-main-grid">
+                    <div class="reprint-col">
+                        <div class="reprint-section">
+                            <h4><i class="fas fa-search"></i> Search Report by Report ID</h4>
+                            <div class="reprint-search-area">
+                                <input type="text" id="reprintSearchId" placeholder="Enter Report ID (e.g., PK-260706-1234)">
+                                <button class="btn btn-reprint-primary" id="reprintSearchBtn"><i class="fas fa-search"></i> Search</button>
+                                <button class="btn btn-warning btn-sm" id="reprintClearBtn"><i class="fas fa-times"></i> Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="reprint-section" id="reprintFoundSection" style="display:none;">
+                            <h4><i class="fas fa-file-alt"></i> Found Report</h4>
+                            <div id="reprintFoundContent" class="reprint-found-content"></div>
+                            <div class="reprint-actions-group">
+                                <button class="btn btn-primary btn-sm" id="reprintPreviewFound"><i class="fas fa-eye"></i> Preview</button>
+                                <button class="btn btn-excel btn-sm" id="reprintExcelFound"><i class="fas fa-file-excel"></i> Excel</button>
+                                <button class="btn btn-pdf btn-sm" id="reprintPdfFound"><i class="fas fa-file-pdf"></i> PDF</button>
+                                <button class="btn btn-word btn-sm" id="reprintWordFound"><i class="fas fa-file-word"></i> Word</button>
+                                <button class="btn btn-success btn-sm" id="reprintPrintFound"><i class="fas fa-print"></i> Print</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="reprint-col">
+                        <div class="reprint-section">
+                            <h4><i class="fas fa-history"></i> Recently Saved Reports</h4>
+                            <div id="recentReportsList">
+                                <div class="reprint-empty">
+                                    <i class="fas fa-info-circle"></i> No reports saved yet.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="reprint-section">
+                            <h4><i class="fas fa-bolt"></i> Quick Actions</h4>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <button class="btn btn-primary btn-sm" id="refreshReportsBtn"><i class="fas fa-sync-alt"></i> Refresh List</button>
+                                <button class="btn btn-excel btn-sm" id="exportAllExcelBtn"><i class="fas fa-file-excel"></i> Export All Excel</button>
+                                <button class="btn btn-pdf btn-sm" id="exportAllPdfBtn"><i class="fas fa-file-pdf"></i> Export All PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reprint-footer">
+                    <span style="color:rgba(255,255,255,0.2);">Transcom Beverages · Pickup Report System</span>
+                    <div class="weather">
+                        <i class="fas fa-sun"></i> 31°C Partly sunny
+                        <span style="margin-left:8px; opacity:0.5;">06-Jul-26</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ===== TOAST =====
+            const toast = document.getElementById('toast');
+            let toastTimeout = null;
+
+            function showToast(message, type) {
+                type = type || 'success';
+                const icon = toast.querySelector('.toast-icon i');
+                const msgEl = toast.querySelector('.toast-message');
+
+                toast.classList.remove('success', 'error', 'info', 'show');
+
+                if (type === 'success') {
+                    icon.className = 'fas fa-check-circle';
+                    toast.classList.add('success');
+                } else if (type === 'error') {
+                    icon.className = 'fas fa-exclamation-circle';
+                    toast.classList.add('error');
+                } else {
+                    icon.className = 'fas fa-info-circle';
+                    toast.classList.add('info');
+                }
+
+                msgEl.textContent = message;
+
+                if (toastTimeout) clearTimeout(toastTimeout);
+                toast.classList.add('show');
+                toastTimeout = setTimeout(function() {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // ===== LOGIN =====
+            const loginOverlay = document.getElementById('loginOverlay');
+            const loginBtn = document.getElementById('loginBtn');
+            const loginUser = document.getElementById('loginUser');
+            const loginPass = document.getElementById('loginPass');
+            const loginError = document.getElementById('loginError');
+            const displayUsername = document.getElementById('displayUsername');
+
+            let currentUser = 'Admin';
+            let users = [];
+            let loginLogs = [];
+
+            // Default permissions object
+            function defaultPermissions() {
+                return { vehicle: true, admin: true, reports: true };
+            }
+
+            function loadUsers() {
+                try {
+                    const saved = localStorage.getItem('transcom_users');
+                    if (saved) {
+                        users = JSON.parse(saved);
+                        // Ensure all users have permissions field
+                        users = users.map(u => {
+                            if (!u.permissions) u.permissions = defaultPermissions();
+                            return u;
+                        });
+                    } else {
+                        users = [
+                            { id: 'admin', password: '1234', fullName: 'Administrator', permissions: { vehicle: true, admin: true, reports: true } },
+                            { id: 'john', password: '1234', fullName: 'John Doe', permissions: { vehicle: true, admin: false, reports: true } }
+                        ];
+                        localStorage.setItem('transcom_users', JSON.stringify(users));
+                    }
+                } catch (e) {
+                    users = [
+                        { id: 'admin', password: '1234', fullName: 'Administrator', permissions: { vehicle: true, admin: true, reports: true } }
+                    ];
+                }
+                renderUsers();
+            }
+
+            function loadLogs() {
+                try {
+                    const saved = localStorage.getItem('transcom_login_logs');
+                    if (saved) {
+                        loginLogs = JSON.parse(saved);
+                    } else {
+                        loginLogs = [];
+                    }
+                } catch (e) {
+                    loginLogs = [];
+                }
+                renderLogs();
+            }
+
+            function saveLogs() {
+                try {
+                    localStorage.setItem('transcom_login_logs', JSON.stringify(loginLogs));
+                } catch (e) {
+                    console.error('Error saving logs:', e);
+                }
+                renderLogs();
+            }
+
+            function saveUsers() {
+                try {
+                    localStorage.setItem('transcom_users', JSON.stringify(users));
+                } catch (e) {
+                    console.error('Error saving users:', e);
+                }
+                renderUsers();
+            }
+
+            function getClientIP() {
+                return '192.168.' + Math.floor(Math.random() * 255) + '.' + Math.floor(Math.random() * 255);
+            }
+
+            function addLoginLog(username) {
+                var now = new Date();
+                var timeStr = now.toLocaleString();
+                var ip = getClientIP();
+                loginLogs.push({
+                    user: username,
+                    time: timeStr,
+                    ip: ip,
+                    timestamp: now.getTime()
+                });
+                if (loginLogs.length > 50) {
+                    loginLogs = loginLogs.slice(-50);
+                }
+                saveLogs();
+            }
+
+            function renderLogs() {
+                var tbody = document.getElementById('logTableBody');
+                if (!tbody) return;
+
+                if (loginLogs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="log-empty">No login records yet.</td></tr>';
+                    return;
+                }
+
+                var html = '';
+                var sorted = [].concat(loginLogs).reverse();
+                for (var i = 0; i < sorted.length; i++) {
+                    var log = sorted[i];
+                    html += '<tr><td><span class="log-badge">' + log.user + '</span></td><td class="log-time">' + log.time +
+                        '</td><td><span class="log-ip">' + log.ip + '</span></td></tr>';
+                }
+                tbody.innerHTML = html;
+            }
+
+            function renderUsers() {
+                var tbody = document.getElementById('userTableBody');
+                if (!tbody) return;
+
+                if (users.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="4" style="text-align:center;color:rgba(255,255,255,0.3);padding:20px;">No users found</td></tr>';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < users.length; i++) {
+                    var user = users[i];
+                    var perms = user.permissions || defaultPermissions();
+                    var permStr = '';
+                    if (perms.vehicle) permStr += '🚚 ';
+                    if (perms.admin) permStr += '🛡️ ';
+                    if (perms.reports) permStr += '📄 ';
+                    if (!permStr) permStr = '—';
+                    html += '<tr><td>' + user.id + '</td><td>' + user.fullName +
+                        '</td><td style="text-align:center;font-size:12px;">' + permStr +
+                        '</td><td style="text-align:center;"><button class="delete-user-btn" data-index="' + i +
+                        '"><i class="fas fa-trash-alt"></i> Delete</button></td></tr>';
+                }
+                tbody.innerHTML = html;
+
+                tbody.querySelectorAll('.delete-user-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var idx = parseInt(this.dataset.index);
+                        if (users[idx].id === 'admin') {
+                            alert('⚠️ Cannot delete the admin user.');
+                            return;
+                        }
+                        if (confirm('Delete user "' + users[idx].id + '"?')) {
+                            users.splice(idx, 1);
+                            saveUsers();
+                        }
+                    });
+                });
+            }
+
+            function validateUserForm() {
+                var userId = document.getElementById('userId');
+                var password = document.getElementById('userPassword');
+                var fullName = document.getElementById('userFullName');
+                var isValid = true;
+
+                document.getElementById('userIdError').textContent = '';
+                document.getElementById('passwordError').textContent = '';
+                document.getElementById('fullNameError').textContent = '';
+                userId.classList.remove('field-error');
+                password.classList.remove('field-error');
+                fullName.classList.remove('field-error');
+
+                if (!userId.value.trim()) {
+                    document.getElementById('userIdError').textContent = 'User ID is required';
+                    userId.classList.add('field-error');
+                    isValid = false;
+                } else if (users.some(function(u) { return u.id === userId.value.trim(); })) {
+                    document.getElementById('userIdError').textContent = 'User ID already exists';
+                    userId.classList.add('field-error');
+                    isValid = false;
+                }
+
+                if (!password.value.trim() || password.value.length < 4) {
+                    document.getElementById('passwordError').textContent = 'Password must be at least 4 characters';
+                    password.classList.add('field-error');
+                    isValid = false;
+                }
+
+                if (!fullName.value.trim()) {
+                    document.getElementById('fullNameError').textContent = 'Full Name is required';
+                    fullName.classList.add('field-error');
+                    isValid = false;
+                }
+
+                return isValid;
+            }
+
+            function addUser() {
+                if (!validateUserForm()) return;
+
+                var userId = document.getElementById('userId').value.trim();
+                var password = document.getElementById('userPassword').value.trim();
+                var fullName = document.getElementById('userFullName').value.trim();
+
+                var permissions = {
+                    vehicle: document.getElementById('permVehicle').checked,
+                    admin: document.getElementById('permAdmin').checked,
+                    reports: document.getElementById('permReports').checked
+                };
+
+                users.push({ id: userId, password: password, fullName: fullName, permissions: permissions });
+                saveUsers();
+
+                document.getElementById('userId').value = '';
+                document.getElementById('userPassword').value = '';
+                document.getElementById('userFullName').value = '';
+                document.getElementById('userIdError').textContent = '';
+                document.getElementById('passwordError').textContent = '';
+                document.getElementById('fullNameError').textContent = '';
+                // reset permission checkboxes to default (all checked)
+                document.getElementById('permVehicle').checked = true;
+                document.getElementById('permAdmin').checked = true;
+                document.getElementById('permReports').checked = true;
+
+                showToast('User "' + userId + '" added successfully!', 'success');
+            }
+
+            // ===== CHECK LOGIN WITH PERMISSIONS =====
+            function checkLogin() {
+                var userId = loginUser.value.trim();
+                var password = loginPass.value.trim();
+
+                var user = users.find(function(u) { return u.id === userId && u.password === password; });
+                if (user) {
+                    currentUser = user.fullName || userId;
+                    displayUsername.textContent = currentUser;
+                    loginOverlay.classList.add('hidden');
+                    loginError.textContent = '';
+                    addLoginLog(currentUser);
+                    showToast('Welcome back, ' + currentUser + '!', 'success');
+
+                    // Apply permissions to navigation
+                    applyPermissions(user.permissions || defaultPermissions());
+                } else {
+                    loginError.textContent = '❌ Invalid credentials. Please try again.';
+                }
+            }
+
+            // ===== APPLY PERMISSIONS TO NAV =====
+            function applyPermissions(perms) {
+                var navItems = document.querySelectorAll('.nav-item');
+                navItems.forEach(function(item) {
+                    var page = item.dataset.page;
+                    if (page === 'vehicle' && !perms.vehicle) {
+                        item.classList.add('disabled');
+                    } else if (page === 'admin' && !perms.admin) {
+                        item.classList.add('disabled');
+                    } else if (page === 'reports' && !perms.reports) {
+                        item.classList.add('disabled');
+                    } else {
+                        item.classList.remove('disabled');
+                    }
+                });
+
+                // If current page is not allowed, switch to first allowed
+                var activePage = document.querySelector('.nav-item.active');
+                if (activePage) {
+                    var page = activePage.dataset.page;
+                    if ((page === 'vehicle' && !perms.vehicle) ||
+                        (page === 'admin' && !perms.admin) ||
+                        (page === 'reports' && !perms.reports)) {
+                        // Find first allowed
+                        var firstAllowed = document.querySelector('.nav-item:not(.disabled)');
+                        if (firstAllowed) {
+                            firstAllowed.click();
+                        } else {
+                            // No permissions? show vehicle by default but disabled
+                            document.querySelector('.nav-item[data-page="vehicle"]').click();
+                        }
+                    }
+                }
+            }
+
+            loginBtn.addEventListener('click', checkLogin);
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') checkLogin();
+            });
+
+            // ===== LOGOFF =====
+            document.getElementById('logoffBtn').addEventListener('click', function() {
+                loginOverlay.classList.remove('hidden');
+                loginUser.value = '';
+                loginPass.value = '';
+                loginError.textContent = '';
+                displayUsername.textContent = 'Admin';
+                document.getElementById('resetBtn').click();
+                document.getElementById('adminPanel').classList.remove('active');
+                document.getElementById('reportsPanel').classList.remove('active');
+                document.querySelectorAll('.nav-item').forEach(function(link) { link.classList.remove('active'); });
+                document.querySelector('.nav-item[data-page="vehicle"]').classList.add('active');
+                document.getElementById('vehicleContent').style.display = 'block';
+                showToast('Logged out successfully', 'info');
+            });
+
+            // ===== NAVIGATION =====
+            var navItems = document.querySelectorAll('.nav-item');
+            var vehicleContent = document.getElementById('vehicleContent');
+            var adminPanel = document.getElementById('adminPanel');
+            var reportsPanel = document.getElementById('reportsPanel');
+
+            function switchPage(page) {
+                navItems.forEach(function(item) { item.classList.remove('active'); });
+                var target = document.querySelector('.nav-item[data-page="' + page + '"]');
+                if (target) target.classList.add('active');
+
+                vehicleContent.style.display = 'none';
+                adminPanel.classList.remove('active');
+                reportsPanel.classList.remove('active');
+
+                if (page === 'vehicle') {
+                    vehicleContent.style.display = 'block';
+                    generateReportId();
+                } else if (page === 'admin') {
+                    adminPanel.classList.add('active');
+                    loadUsers();
+                    loadLogs();
+                } else if (page === 'reports') {
+                    reportsPanel.classList.add('active');
+                    renderReportPreview();
+                    renderRecentReports();
+                }
+            }
+
+            navItems.forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (this.classList.contains('disabled')) {
+                        showToast('You do not have permission to access this module.', 'error');
+                        return;
+                    }
+                    var page = this.dataset.page;
+                    switchPage(page);
+                });
+            });
+
+            // ===== REPORTS SUB-TABS =====
+            var reportsTabs = document.querySelectorAll('.reports-tab');
+            var tabContents = {
+                'view-reports': document.getElementById('tab-view-reports'),
+                'reprint-reports': document.getElementById('tab-reprint-reports')
+            };
+
+            reportsTabs.forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    reportsTabs.forEach(function(t) { t.classList.remove('active'); });
+                    this.classList.add('active');
+
+                    var tabId = this.dataset.tab;
+                    Object.keys(tabContents).forEach(function(key) {
+                        tabContents[key].classList.toggle('active', key === tabId);
+                    });
+
+                    if (tabId === 'reprint-reports') {
+                        renderRecentReports();
+                    }
+                });
+            });
+
+            // ===== ADD USER =====
+            document.getElementById('addUserBtn').addEventListener('click', addUser);
+            document.querySelectorAll('#userId, #userPassword, #userFullName').forEach(function(input) {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        addUser();
+                    }
+                });
+            });
+
+            document.getElementById('resetUserFormBtn').addEventListener('click', function() {
+                document.getElementById('userId').value = '';
+                document.getElementById('userPassword').value = '';
+                document.getElementById('userFullName').value = '';
+                document.getElementById('userIdError').textContent = '';
+                document.getElementById('passwordError').textContent = '';
+                document.getElementById('fullNameError').textContent = '';
+                document.getElementById('userId').classList.remove('field-error');
+                document.getElementById('userPassword').classList.remove('field-error');
+                document.getElementById('userFullName').classList.remove('field-error');
+                document.getElementById('permVehicle').checked = true;
+                document.getElementById('permAdmin').checked = true;
+                document.getElementById('permReports').checked = true;
+            });
+
+            // ===== REPORT ID GENERATOR =====
+            function generateReportId() {
+                var date = new Date();
+                var year = date.getFullYear().toString().slice(-2);
+                var month = String(date.getMonth() + 1).padStart(2, '0');
+                var day = String(date.getDate()).padStart(2, '0');
+                var random = String(Math.floor(1000 + Math.random() * 9000));
+                var reportId = 'PK-' + year + month + day + '-' + random;
+                document.getElementById('reportId').value = reportId;
+                return reportId;
+            }
+
+            // ===== REPORTS FUNCTIONS =====
+            function getReports() {
+                var reports = [];
+                try {
+                    var saved = localStorage.getItem('transcom_reports');
+                    if (saved) {
+                        reports = JSON.parse(saved);
+                    }
+                } catch (e) {
+                    reports = [];
+                }
+                return reports;
+            }
+
+            function saveReports(reports) {
+                try {
+                    localStorage.setItem('transcom_reports', JSON.stringify(reports));
+                } catch (e) {
+                    console.error('Error saving reports:', e);
+                }
+            }
+
+            function renderReportPreview() {
+                var container = document.getElementById('reportPreviewContent');
+                var reports = getReports();
+
+                if (reports.length === 0) {
+                    container.innerHTML =
+                        '<div class="report-empty-preview"><i class="fas fa-info-circle"></i> No reports available. Please save data from Vehicle System.</div>';
+                    return;
+                }
+
+                var dateFrom = document.getElementById('reportDateFrom').value;
+                var dateTo = document.getElementById('reportDateTo').value;
+                var reportIdFilter = document.getElementById('reportIdFilter').value.trim().toLowerCase();
+
+                var filtered = reports.filter(function(r) {
+                    if (dateFrom && r.date && r.date < dateFrom) return false;
+                    if (dateTo && r.date && r.date > dateTo) return false;
+                    if (reportIdFilter && r.reportId && !r.reportId.toLowerCase().includes(reportIdFilter))
+                    return false;
+                    return true;
+                });
+
+                if (filtered.length === 0) {
+                    container.innerHTML =
+                        '<div class="report-empty-preview"><i class="fas fa-info-circle"></i> No reports match the selected criteria.</div>';
+                    return;
+                }
+
+                var html =
+                    '<table><thead><tr><th>Report ID</th><th>Date</th><th>Customer Name</th><th>Address</th><th>CS Qty</th><th>Vehicle No.</th><th>Salesman</th></tr></thead><tbody>';
+                var grandTotal = 0;
+
+                for (var i = 0; i < filtered.length; i++) {
+                    var r = filtered[i];
+                    var date = r.date || 'N/A';
+                    var vehicle = r.vehicle || 'N/A';
+                    var salesman = r.salesman || 'N/A';
+                    var reportId = r.reportId || 'N/A';
+                    if (r.rows && r.rows.length > 0) {
+                        for (var j = 0; j < r.rows.length; j++) {
+                            var row = r.rows[j];
+                            var qty = parseInt(row.raw) || 0;
+                            grandTotal += qty;
+                            html += '<tr><td><span style="color:#ffd700;font-weight:500;">' + reportId +
+                                '</span></td><td>' + date + '</td><td>' + (row.outlet || '') + '</td><td>' + (row
+                                .address || '') + '</td><td style="text-align:center;">' + qty +
+                                '</td><td>' + vehicle + '</td><td>' + salesman + '</td></tr>';
+                        }
+                    } else {
+                        html += '<tr><td><span style="color:#ffd700;font-weight:500;">' + reportId +
+                            '</span></td><td>' + date +
+                            '</td><td colspan="4" style="text-align:center;color:rgba(255,255,255,0.3);">No customer data</td><td>' +
+                            salesman + '</td></tr>';
+                    }
+                }
+
+                html +=
+                    '</tbody><tfoot><tr class="report-total-row"><td colspan="4" style="text-align:right;"><i class="fas fa-calculator"></i> Grand Total CS</td><td style="text-align:center;font-weight:600;color:#b3e0ff;">' +
+                    grandTotal + '</td><td colspan="2"></td></tr></tfoot></table>';
+
+                container.innerHTML = html;
+                window._filteredReports = filtered;
+                window._grandTotal = grandTotal;
+            }
+
+            document.getElementById('reportPreviewBtn').addEventListener('click', renderReportPreview);
+
+            document.getElementById('clearReportFilter').addEventListener('click', function() {
+                document.getElementById('reportIdFilter').value = '';
+                renderReportPreview();
+            });
+
+            // ===== EXPORT FUNCTIONS =====
+            document.getElementById('exportExcelBtn').addEventListener('click', function() {
+                var reports = window._filteredReports || getReports();
+                if (!reports || reports.length === 0) {
+                    showToast('No reports to export. Please preview first.', 'error');
+                    return;
+                }
+                var data = [
+                    ['Report ID', 'Date', 'Customer Name', 'Address', 'CS Qty', 'Vehicle No.', 'Salesman']
+                ];
+                for (var i = 0; i < reports.length; i++) {
+                    var r = reports[i];
+                    var date = r.date || 'N/A';
+                    var vehicle = r.vehicle || 'N/A';
+                    var salesman = r.salesman || 'N/A';
+                    var reportId = r.reportId || 'N/A';
+                    if (r.rows && r.rows.length > 0) {
+                        for (var j = 0; j < r.rows.length; j++) {
+                            var row = r.rows[j];
+                            data.push([reportId, date, row.outlet || '', row.address || '', parseInt(row.raw) || 0,
+                                vehicle, salesman
+                            ]);
+                        }
+                    }
+                }
+                if (window._grandTotal !== undefined) {
+                    data.push([]);
+                    data.push(['Grand Total CS', '', '', '', window._grandTotal, '', '']);
+                }
+                var wb = XLSX.utils.book_new();
+                var ws = XLSX.utils.aoa_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, 'Pickup Reports');
+                XLSX.writeFile(wb, 'Pickup_Reports_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+                showToast('Excel exported successfully!', 'success');
+            });
+
+            document.getElementById('exportPdfBtn').addEventListener('click', function() {
+                var reports = window._filteredReports || getReports();
+                if (!reports || reports.length === 0) {
+                    showToast('No reports to export. Please preview first.', 'error');
+                    return;
+                }
+                var jsPDF = window.jspdf.jsPDF;
+                var doc = new jsPDF('p', 'mm', 'a4');
+                var y = 20;
+                doc.setFontSize(16);
+                doc.text('Transcom Beverages - Pickup Reports', 14, y);
+                y += 8;
+                doc.setFontSize(9);
+                doc.text('Generated: ' + new Date().toLocaleString(), 14, y);
+                y += 10;
+                doc.setFontSize(8);
+                doc.text('Report ID', 14, y);
+                doc.text('Date', 45, y);
+                doc.text('Customer', 65, y);
+                doc.text('Address', 100, y);
+                doc.text('Qty', 140, y);
+                doc.text('Vehicle', 155, y);
+                doc.text('Salesman', 175, y);
+                y += 3;
+                doc.line(14, y, 195, y);
+                y += 4;
+                var grandTotal = 0;
+                for (var i = 0; i < reports.length; i++) {
+                    var r = reports[i];
+                    var date = r.date || 'N/A';
+                    var vehicle = r.vehicle || 'N/A';
+                    var salesman = r.salesman || 'N/A';
+                    var reportId = r.reportId || 'N/A';
+                    if (r.rows && r.rows.length > 0) {
+                        for (var j = 0; j < r.rows.length; j++) {
+                            if (y > 270) { doc.addPage();
+                                y = 20; }
+                            var row = r.rows[j];
+                            var qty = parseInt(row.raw) || 0;
+                            grandTotal += qty;
+                            doc.text(reportId, 14, y);
+                            doc.text(date, 45, y);
+                            doc.text(String(row.outlet || '').substring(0, 18), 65, y);
+                            doc.text(String(row.address || '').substring(0, 20), 100, y);
+                            doc.text(String(qty), 140, y);
+                            doc.text(vehicle, 155, y);
+                            doc.text(salesman, 175, y);
+                            y += 5;
+                        }
+                    }
+                }
+                y += 4;
+                doc.line(14, y, 195, y);
+                y += 4;
+                doc.setFontSize(10);
+                doc.text('Grand Total CS: ' + grandTotal, 14, y);
+                doc.save('Pickup_Reports_' + new Date().toISOString().slice(0, 10) + '.pdf');
+                showToast('PDF exported successfully!', 'success');
+            });
+
+            document.getElementById('exportWordBtn').addEventListener('click', function() {
+                var reports = window._filteredReports || getReports();
+                if (!reports || reports.length === 0) {
+                    showToast('No reports to export. Please preview first.', 'error');
+                    return;
+                }
+                var html =
+                    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Pickup Reports</title><style>body { font-family: "Segoe UI", Arial, sans-serif; padding: 30px; } h1 { color: #1a3a5a; } table { border-collapse: collapse; width: 100%; margin-top: 10px; } th { background: #1a3a5a; color: white; padding: 8px 12px; text-align: left; } td { padding: 6px 12px; border: 1px solid #ccc; } .total-row { background: #e0e8f0; font-weight: bold; } .report-id { color: #b8860b; font-weight: bold; }</style></head><body><h1>Transcom Beverages - Pickup Reports</h1><p>Generated: ' +
+                    new Date().toLocaleString() +
+                    '</p><table><tr><th>Report ID</th><th>Date</th><th>Customer Name</th><th>Address</th><th>CS Qty</th><th>Vehicle No.</th><th>Salesman</th></tr>';
+                var grandTotal = 0;
+                for (var i = 0; i < reports.length; i++) {
+                    var r = reports[i];
+                    var date = r.date || 'N/A';
+                    var vehicle = r.vehicle || 'N/A';
+                    var salesman = r.salesman || 'N/A';
+                    var reportId = r.reportId || 'N/A';
+                    if (r.rows && r.rows.length > 0) {
+                        for (var j = 0; j < r.rows.length; j++) {
+                            var row = r.rows[j];
+                            var qty = parseInt(row.raw) || 0;
+                            grandTotal += qty;
+                            html += '<tr><td><span class="report-id">' + reportId + '</span></td><td>' + date +
+                                '</td><td>' + (row.outlet || '') + '</td><td>' + (row.address || '') +
+                                '</td><td style="text-align:center;">' + qty + '</td><td>' + vehicle +
+                                '</td><td>' + salesman + '</td></tr>';
+                        }
+                    }
+                }
+                html +=
+                    '<tr class="total-row"><td colspan="4" style="text-align:right;">Grand Total CS</td><td style="text-align:center;">' +
+                    grandTotal + '</td><td colspan="2"></td></tr></table></body></html>';
+                var blob = new Blob([html], { type: 'application/msword' });
+                var link = document.createElement('a');
+                link.download = 'Pickup_Reports_' + new Date().toISOString().slice(0, 10) + '.doc';
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                URL.revokeObjectURL(link.href);
+                showToast('Word document exported successfully!', 'success');
+            });
+
+            // ===== OUTLET DATA =====
+            var outletMap = {
+                'ABC Supermarket': '123 Main Street, Dhaka',
+                'Metro Plaza': '45 Gulshan Avenue, Dhaka',
+                'Rahim Store': '77 Banani, Dhaka',
+                'Khan Enterprise': '89 Mirpur Road, Dhaka',
+                'Rupali Mart': '32 Dhanmondi, Dhaka',
+                'City Mart': '56 Uttara, Dhaka',
+                'Alif Traders': '12 Farmgate, Dhaka',
+                'Bashundhara Mall': 'Plot 1, Bashundhara R/A',
+                'Jamuna Future Park': '300 Pragati Sarani, Dhaka',
+                'Local Bazar': '99 Old Town, Dhaka'
+            };
+            var outletNames = Object.keys(outletMap);
+
+            // ===== TABLE ROWS =====
+            var tbody = document.getElementById('tableBody');
+            var totalRawSpan = document.getElementById('totalRawCs');
+
+            function createRow(index) {
+                var tr = document.createElement('tr');
+                var tdSl = document.createElement('td');
+                tdSl.className = 'serial-col';
+                tdSl.textContent = index + 1;
+                tr.appendChild(tdSl);
+
+                var tdOutlet = document.createElement('td');
+                var select = document.createElement('select');
+                select.className = 'outlet-select required-field';
+                select.setAttribute('data-required', 'true');
+                var defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = '-- Select Customer --';
+                defaultOpt.selected = true;
+                defaultOpt.disabled = true;
+                select.appendChild(defaultOpt);
+                for (var i = 0; i < outletNames.length; i++) {
+                    var name = outletNames[i];
+                    var opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    select.appendChild(opt);
+                }
+                tdOutlet.appendChild(select);
+                tr.appendChild(tdOutlet);
+
+                var tdAddr = document.createElement('td');
+                var addrInput = document.createElement('input');
+                addrInput.type = 'text';
+                addrInput.className = 'address-input required-field';
+                addrInput.placeholder = 'Address (auto-filled)';
+                addrInput.setAttribute('data-required', 'true');
+                addrInput.readOnly = false;
+                tdAddr.appendChild(addrInput);
+                tr.appendChild(tdAddr);
+
+                var tdRaw = document.createElement('td');
+                var rawInput = document.createElement('input');
+                rawInput.type = 'number';
+                rawInput.className = 'raw-cs';
+                rawInput.value = Math.floor(Math.random() * 15) + 5;
+                rawInput.min = 0;
+                rawInput.step = 1;
+                tdRaw.appendChild(rawInput);
+                tr.appendChild(tdRaw);
+
+                var tdDel = document.createElement('td');
+                tdDel.className = 'delete-col';
+                var delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                delBtn.title = 'Delete row';
+                delBtn.addEventListener('click', function() {
+                    deleteRow(tr);
+                });
+                tdDel.appendChild(delBtn);
+                tr.appendChild(tdDel);
+
+                select.addEventListener('change', function() {
+                    var selected = this.value;
+                    var addrField = this.closest('tr').querySelector('.address-input');
+                    if (selected && outletMap[selected]) {
+                        addrField.value = outletMap[selected];
+                        addrField.classList.remove('field-error');
+                    } else {
+                        addrField.value = '';
+                        addrField.classList.add('field-error');
+                    }
+                    validateRow(tr);
+                });
+
+                addrInput.addEventListener('blur', function() {
+                    validateRow(tr);
+                });
+
+                rawInput.addEventListener('input', updateTotal);
+                setTimeout(function() { validateRow(tr); }, 100);
+                return tr;
+            }
+
+            function validateRow(tr) {
+                var select = tr.querySelector('.outlet-select');
+                var addrInput = tr.querySelector('.address-input');
+                var valid = true;
+
+                if (!select.value || select.value === '') {
+                    select.classList.add('field-error');
+                    valid = false;
+                } else {
+                    select.classList.remove('field-error');
+                }
+
+                if (select.value && select.value !== '') {
+                    if (!addrInput.value || addrInput.value.trim() === '') {
+                        addrInput.classList.add('field-error');
+                        valid = false;
+                    } else {
+                        addrInput.classList.remove('field-error');
+                    }
+                } else {
+                    addrInput.classList.remove('field-error');
+                }
+                return valid;
+            }
+
+            function validateAllRows() {
+                var rows = tbody.querySelectorAll('tr');
+                var allValid = true;
+                rows.forEach(function(row) {
+                    if (!validateRow(row)) {
+                        allValid = false;
+                    }
+                });
+                return allValid;
+            }
+
+            function deleteRow(row) {
+                var rows = tbody.querySelectorAll('tr');
+                if (rows.length <= 1) {
+                    showToast('At least one row is required.', 'error');
+                    return;
+                }
+                row.remove();
+                renumberRows();
+                updateTotal();
+            }
+
+            function buildTable(initialRows) {
+                initialRows = initialRows || 2;
+                tbody.innerHTML = '';
+                for (var i = 0; i < initialRows; i++) {
+                    tbody.appendChild(createRow(i));
+                }
+                updateTotal();
+                renumberRows();
+            }
+
+            function renumberRows() {
+                var rows = tbody.querySelectorAll('tr');
+                rows.forEach(function(row, idx) {
+                    var slCell = row.querySelector('.serial-col');
+                    if (slCell) {
+                        slCell.textContent = idx + 1;
+                    }
+                });
+            }
+
+            function addRow() {
+                var rowCount = tbody.querySelectorAll('tr').length;
+                var newRow = createRow(rowCount);
+                tbody.appendChild(newRow);
+                renumberRows();
+                updateTotal();
+                var select = newRow.querySelector('.outlet-select');
+                if (select) select.focus();
+            }
+
+            function updateTotal() {
+                var rawInputs = document.querySelectorAll('.raw-cs');
+                var total = 0;
+                rawInputs.forEach(function(inp) {
+                    var val = parseInt(inp.value, 10);
+                    if (!isNaN(val) && val > 0) total += val;
+                });
+                totalRawSpan.textContent = total;
+            }
+
+            buildTable(2);
+            document.getElementById('addRowBtn').addEventListener('click', addRow);
+
+            // ===== SAVE =====
+            document.getElementById('saveBtn').addEventListener('click', function() {
+                if (!validateAllRows()) {
+                    showToast(
+                        '⚠️ Please select a Customer for all rows and ensure Address is auto-filled correctly.',
+                        'error');
+                    return;
+                }
+
+                var reportId = document.getElementById('reportId').value || generateReportId();
+                var date = document.getElementById('pickupDate').value;
+                var salesman = document.getElementById('salesmanName').value || 'N/A';
+                var vehicle = document.getElementById('vehicleNo').value || 'N/A';
+                var mobile = document.getElementById('mobileNo').value || 'N/A';
+                var exitTime = document.getElementById('exitTime').value || 'N/A';
+
+                var rows = [];
+                document.querySelectorAll('#tableBody tr').forEach(function(tr, idx) {
+                    var outlet = tr.querySelector('.outlet-select')?.value || '';
+                    var address = tr.querySelector('.address-input')?.value || '';
+                    var raw = tr.querySelector('.raw-cs')?.value || 0;
+                    rows.push({ sl: idx + 1, outlet: outlet, address: address, raw: raw });
+                });
+
+                var reportData = {
+                    reportId: reportId,
+                    date: date,
+                    salesman: salesman,
+                    vehicle: vehicle,
+                    mobile: mobile,
+                    exitTime: exitTime,
+                    rows: rows,
+                    totalRaw: totalRawSpan.textContent,
+                    savedAt: new Date().toISOString()
+                };
+
+                try {
+                    var reports = getReports();
+                    reports.push(reportData);
+                    saveReports(reports);
+                } catch (e) {
+                    console.error('Error saving report:', e);
+                    showToast('Error saving data. Please try again.', 'error');
+                    return;
+                }
+
+                showToast('✅ Data saved successfully!\nReport ID: ' + reportId, 'success');
+                generateReportId();
+                if (document.getElementById('reportsPanel').classList.contains('active')) {
+                    renderReportPreview();
+                    renderRecentReports();
+                }
+            });
+
+            document.getElementById('printBtn').addEventListener('click', function() {
+                window.print();
+            });
+
+            // ===== PREVIEW =====
+            var previewModal = document.getElementById('previewModal');
+            var previewContent = document.getElementById('previewContent');
+
+            function generatePreview(reportData) {
+                if (reportData) {
+                    var reportId = reportData.reportId || 'N/A';
+                    var date = reportData.date || 'N/A';
+                    var salesman = reportData.salesman || 'N/A';
+                    var vehicle = reportData.vehicle || 'N/A';
+                    var mobile = reportData.mobile || 'N/A';
+                    var exitTime = reportData.exitTime || 'N/A';
+
+                    var rowsHtml = '';
+                    if (reportData.rows && reportData.rows.length > 0) {
+                        for (var i = 0; i < reportData.rows.length; i++) {
+                            var row = reportData.rows[i];
+                            rowsHtml += '<tr><td>' + (i + 1) + '</td><td>' + (row.outlet || '') + '</td><td>' + (row
+                                .address || '') + '</td><td>' + (row.raw || 0) + '</td></tr>';
+                        }
+                    }
+                    var total = reportData.totalRaw || '0';
+
+                    return '<div class="preview-header-grid"><div><div><span class="label">Report ID:</span> <span class="value" style="color:#ffd700;font-weight:500;">' +
+                        reportId + '</span></div><div><span class="label">Date:</span> <span class="value">' +
+                        date +
+                        '</span></div><div><span class="label">Salesman:</span> <span class="value">' +
+                        salesman +
+                        '</span></div><div><span class="label">Mobile:</span> <span class="value">' + mobile +
+                        '</span></div></div><div class="right-group"><div><span class="label">Truck Number:</span> <span class="value">' +
+                        vehicle +
+                        '</span></div><div><span class="label">Exit Time:</span> <span class="value">' +
+                        exitTime +
+                        '</span></div></div></div><div class="preview-section-title"><i class="fas fa-list-ul"></i> Pickup Details</div><table class="preview-table"><thead><tr><th>SL</th><th>Customer Name</th><th>Address</th><th>Raw CS Qty</th></tr></thead><tbody>' +
+                        rowsHtml +
+                        '</tbody></table><div class="preview-total"><span class="label">Total Raw CS:</span> <span class="value">' +
+                        total + '</span></div>';
+                }
+
+                // Default: generate from current form
+                var reportId = document.getElementById('reportId').value || generateReportId();
+                var date = document.getElementById('pickupDate').value || 'N/A';
+                var salesman = document.getElementById('salesmanName').value || 'N/A';
+                var vehicle = document.getElementById('vehicleNo').value || 'N/A';
+                var mobile = document.getElementById('mobileNo').value || 'N/A';
+                var exitTime = document.getElementById('exitTime').value || 'N/A';
+
+                var rowsHtml = '';
+                var rows = document.querySelectorAll('#tableBody tr');
+                rows.forEach(function(tr, idx) {
+                    var outlet = tr.querySelector('.outlet-select')?.value || '';
+                    var address = tr.querySelector('.address-input')?.value || '';
+                    var raw = tr.querySelector('.raw-cs')?.value || 0;
+                    rowsHtml += '<tr><td>' + (idx + 1) + '</td><td>' + outlet + '</td><td>' + address +
+                        '</td><td>' + raw + '</td></tr>';
+                });
+
+                var total = totalRawSpan.textContent;
+
+                return '<div class="preview-header-grid"><div><div><span class="label">Report ID:</span> <span class="value" style="color:#ffd700;font-weight:500;">' +
+                    reportId + '</span></div><div><span class="label">Date:</span> <span class="value">' +
+                    date +
+                    '</span></div><div><span class="label">Salesman:</span> <span class="value">' + salesman +
+                    '</span></div><div><span class="label">Mobile:</span> <span class="value">' + mobile +
+                    '</span></div></div><div class="right-group"><div><span class="label">Truck Number:</span> <span class="value">' +
+                    vehicle +
+                    '</span></div><div><span class="label">Exit Time:</span> <span class="value">' + exitTime +
+                    '</span></div></div></div><div class="preview-section-title"><i class="fas fa-list-ul"></i> Pickup Details</div><table class="preview-table"><thead><tr><th>SL</th><th>Customer Name</th><th>Address</th><th>Raw CS Qty</th></tr></thead><tbody>' +
+                    rowsHtml +
+                    '</tbody></table><div class="preview-total"><span class="label">Total Raw CS:</span> <span class="value">' +
+                    total + '</span></div>';
+            }
+
+            document.getElementById('previewBtn').addEventListener('click', function() {
+                if (!validateAllRows()) {
+                    showToast(
+                        '⚠️ Please select a Customer for all rows and ensure Address is auto-filled correctly before preview.',
+                        'error');
+                    return;
+                }
+                previewContent.innerHTML = generatePreview();
+                previewModal.classList.add('active');
+            });
+
+            document.getElementById('closePreview').addEventListener('click', function() {
+                previewModal.classList.remove('active');
+            });
+
+            previewModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    previewModal.classList.remove('active');
+                }
+            });
+
+            // ===== SAVE AS PHOTO =====
+            document.getElementById('savePhotoBtn').addEventListener('click', function() {
+                var previewElement = document.getElementById('previewContent');
+                var originalStyles = {
+                    background: previewElement.style.background,
+                    padding: previewElement.style.padding,
+                    borderRadius: previewElement.style.borderRadius
+                };
+
+                previewElement.style.background = 'rgba(20, 50, 70, 0.95)';
+                previewElement.style.padding = '20px';
+                previewElement.style.borderRadius = '20px';
+
+                html2canvas(previewElement, {
+                    scale: 2,
+                    backgroundColor: '#143246',
+                    allowTaint: true,
+                    useCORS: true,
+                    logging: false,
+                    width: previewElement.scrollWidth,
+                    height: previewElement.scrollHeight
+                }).then(function(canvas) {
+                    previewElement.style.background = originalStyles.background;
+                    previewElement.style.padding = originalStyles.padding;
+                    previewElement.style.borderRadius = originalStyles.borderRadius;
+
+                    var link = document.createElement('a');
+                    link.download = 'Pickup_Details_' + new Date().toISOString().slice(0, 10) + '.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    showToast('Photo saved successfully!', 'success');
+                }).catch(function(err) {
+                    console.error('Error capturing screenshot:', err);
+                    previewElement.style.background = originalStyles.background;
+                    previewElement.style.padding = originalStyles.padding;
+                    previewElement.style.borderRadius = originalStyles.borderRadius;
+                    showToast('Failed to capture screenshot. Please try again.', 'error');
+                });
+            });
+
+            // ===== COPY PHOTO =====
+            document.getElementById('copyPhotoBtn').addEventListener('click', function() {
+                var previewElement = document.getElementById('previewContent');
+                var originalStyles = {
+                    background: previewElement.style.background,
+                    padding: previewElement.style.padding,
+                    borderRadius: previewElement.style.borderRadius
+                };
+
+                previewElement.style.background = 'rgba(20, 50, 70, 0.95)';
+                previewElement.style.padding = '20px';
+                previewElement.style.borderRadius = '20px';
+
+                html2canvas(previewElement, {
+                    scale: 2,
+                    backgroundColor: '#143246',
+                    allowTaint: true,
+                    useCORS: true,
+                    logging: false,
+                    width: previewElement.scrollWidth,
+                    height: previewElement.scrollHeight
+                }).then(function(canvas) {
+                    previewElement.style.background = originalStyles.background;
+                    previewElement.style.padding = originalStyles.padding;
+                    previewElement.style.borderRadius = originalStyles.borderRadius;
+
+                    canvas.toBlob(function(blob) {
+                        var item = new ClipboardItem({ 'image/png': blob });
+                        navigator.clipboard.write([item]).then(function() {
+                            showToast('📋 Photo copied to clipboard!', 'success');
+                        }).catch(function(err) {
+                            console.error('Clipboard write error:', err);
+                            var dataUrl = canvas.toDataURL('image/png');
+                            var textarea = document.createElement('textarea');
+                            textarea.value = dataUrl;
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            try {
+                                document.execCommand('copy');
+                                showToast('📋 Image data URL copied to clipboard!', 'success');
+                            } catch (e) {
+                                showToast('Failed to copy. Please use "Save as Photo" instead.',
+                                    'error');
+                            }
+                            document.body.removeChild(textarea);
+                        });
+                    }, 'image/png');
+                }).catch(function(err) {
+                    console.error('Error capturing screenshot:', err);
+                    previewElement.style.background = originalStyles.background;
+                    previewElement.style.padding = originalStyles.padding;
+                    previewElement.style.borderRadius = originalStyles.borderRadius;
+                    showToast('Failed to capture screenshot. Please try again.', 'error');
+                });
+            });
+
+            // ===== RESET =====
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                document.querySelectorAll('.raw-cs').forEach(function(inp) { inp.value = '0'; });
+                document.querySelectorAll('.outlet-select').forEach(function(sel) {
+                    sel.selectedIndex = 0;
+                    var event = new Event('change', { bubbles: true });
+                    sel.dispatchEvent(event);
+                });
+                document.getElementById('salesmanName').value = 'John Doe';
+                document.getElementById('vehicleNo').value = 'DHA-789';
+                document.getElementById('mobileNo').value = '01712345678';
+                document.getElementById('exitTime').value = '18:30';
+                generateReportId();
+
+                var rows = tbody.querySelectorAll('tr');
+                if (rows.length > 2) {
+                    for (var i = rows.length - 1; i >= 2; i--) {
+                        rows[i].remove();
+                    }
+                    renumberRows();
+                    updateTotal();
+                }
+                updateTotal();
+                setTimeout(function() { validateAllRows(); }, 50);
+                showToast('Form reset successfully', 'info');
+            });
+
+            // ===== REPRINT FUNCTIONS =====
+            var _foundReport = null;
+
+            function renderRecentReports() {
+                var container = document.getElementById('recentReportsList');
+                var reports = getReports();
+
+                if (reports.length === 0) {
+                    container.innerHTML =
+                        '<div class="reprint-empty"><i class="fas fa-info-circle"></i> No reports saved yet.</div>';
+                    return;
+                }
+
+                var recent = reports.slice(-10).reverse();
+                var html = '';
+                for (var i = 0; i < recent.length; i++) {
+                    var r = recent[i];
+                    var reportId = r.reportId || 'N/A';
+                    var date = r.date || 'N/A';
+                    var salesman = r.salesman || 'N/A';
+                    var totalItems = r.rows ? r.rows.length : 0;
+                    var actualIdx = reports.length - 1 - i;
+
+                    html +=
+                        '<div class="reprint-report-item"><div class="report-info"><span class="rid">' +
+                        reportId + '</span><span class="rdate"><i class="far fa-calendar-alt"></i> ' + date +
+                        '</span><span class="rname"><i class="fas fa-user"></i> ' + salesman +
+                        '</span><span style="color:rgba(255,255,255,0.3);font-size:11px;">' + totalItems +
+                        ' items</span></div><div class="report-actions"><button class="btn btn-primary btn-xs reprint-preview-item" data-index="' +
+                        actualIdx +
+                        '"><i class="fas fa-eye"></i></button><button class="btn btn-excel btn-xs reprint-excel-item" data-index="' +
+                        actualIdx +
+                        '"><i class="fas fa-file-excel"></i></button><button class="btn btn-pdf btn-xs reprint-pdf-item" data-index="' +
+                        actualIdx +
+                        '"><i class="fas fa-file-pdf"></i></button><button class="btn btn-word btn-xs reprint-word-item" data-index="' +
+                        actualIdx +
+                        '"><i class="fas fa-file-word"></i></button><button class="btn btn-success btn-xs reprint-print-item" data-index="' +
+                        actualIdx + '"><i class="fas fa-print"></i></button></div></div>';
+                }
+
+                container.innerHTML = html;
+
+                container.querySelectorAll('.reprint-preview-item').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var reportsList = getReports();
+                        var idx = parseInt(this.dataset.index);
+                        var report = reportsList[idx];
+                        if (report) {
+                            previewContent.innerHTML = generatePreview(report);
+                            previewModal.classList.add('active');
+                        }
+                    });
+                });
+
+                container.querySelectorAll('.reprint-excel-item').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var reportsList = getReports();
+                        var idx = parseInt(this.dataset.index);
+                        var report = reportsList[idx];
+                        if (report) exportSingleReportExcel(report);
+                    });
+                });
+
+                container.querySelectorAll('.reprint-pdf-item').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var reportsList = getReports();
+                        var idx = parseInt(this.dataset.index);
+                        var report = reportsList[idx];
+                        if (report) exportSingleReportPdf(report);
+                    });
+                });
+
+                container.querySelectorAll('.reprint-word-item').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var reportsList = getReports();
+                        var idx = parseInt(this.dataset.index);
+                        var report = reportsList[idx];
+                        if (report) exportSingleReportWord(report);
+                    });
+                });
+
+                container.querySelectorAll('.reprint-print-item').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var reportsList = getReports();
+                        var idx = parseInt(this.dataset.index);
+                        var report = reportsList[idx];
+                        if (report) printSingleReport(report);
+                    });
+                });
+            }
+
+            // ===== SEARCH REPORT BY ID =====
+            document.getElementById('reprintSearchBtn').addEventListener('click', function() {
+                var searchId = document.getElementById('reprintSearchId').value.trim();
+                if (!searchId) {
+                    showToast('Please enter a Report ID to search.', 'error');
+                    return;
+                }
+
+                var reports = getReports();
+                var found = reports.find(function(r) {
+                    return r.reportId && r.reportId.toLowerCase() === searchId.toLowerCase();
+                });
+
+                var section = document.getElementById('reprintFoundSection');
+                var content = document.getElementById('reprintFoundContent');
+
+                if (found) {
+                    _foundReport = found;
+                    section.style.display = 'block';
+                    var totalItems = found.rows ? found.rows.length : 0;
+                    content.innerHTML =
+                        '<div class="report-detail"><span class="label">Report ID:</span><span class="value gold">' +
+                        found.reportId + '</span><span class="label">Date:</span><span class="value">' + (found
+                        .date || 'N/A') +
+                        '</span><span class="label">Salesman:</span><span class="value">' + (found.salesman ||
+                        'N/A') +
+                        '</span><span class="label">Vehicle No.:</span><span class="value">' + (found.vehicle ||
+                        'N/A') +
+                        '</span><span class="label">Mobile:</span><span class="value">' + (found.mobile ||
+                        'N/A') +
+                        '</span><span class="label">Exit Time:</span><span class="value">' + (found.exitTime ||
+                        'N/A') +
+                        '</span><span class="label">Total Items:</span><span class="value">' + totalItems +
+                        '</span><span class="label">Total CS:</span><span class="value" style="color:#b3e0ff;font-weight:500;">' +
+                        (found.totalRaw || '0') + '</span></div>';
+                    showToast('Report ' + found.reportId + ' found!', 'success');
+                } else {
+                    section.style.display = 'block';
+                    content.innerHTML =
+                        '<div style="color:#ff8a8a; padding:12px 0; text-align:center;"><i class="fas fa-exclamation-circle"></i> No report found with ID: <strong>' +
+                        searchId + '</strong></div>';
+                    _foundReport = null;
+                    showToast('Report not found. Please check the ID.', 'error');
+                }
+            });
+
+            document.getElementById('reprintClearBtn').addEventListener('click', function() {
+                document.getElementById('reprintSearchId').value = '';
+                document.getElementById('reprintFoundSection').style.display = 'none';
+                _foundReport = null;
+                showToast('Search cleared', 'info');
+            });
+
+            document.getElementById('reprintSearchId').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('reprintSearchBtn').click();
+                }
+            });
+
+            // ===== REPRINT ACTION FUNCTIONS =====
+            function getFoundReport() {
+                if (_foundReport) return _foundReport;
+                var searchId = document.getElementById('reprintSearchId').value.trim();
+                if (searchId) {
+                    var reports = getReports();
+                    var found = reports.find(function(r) {
+                        return r.reportId && r.reportId.toLowerCase() === searchId.toLowerCase();
+                    });
+                    if (found) {
+                        _foundReport = found;
+                        return found;
+                    }
+                }
+                return null;
+            }
+
+            document.getElementById('reprintPreviewFound').addEventListener('click', function() {
+                var report = getFoundReport();
+                if (report) {
+                    previewContent.innerHTML = generatePreview(report);
+                    previewModal.classList.add('active');
+                } else {
+                    showToast('No report found. Please search first.', 'error');
+                }
+            });
+
+            document.getElementById('reprintExcelFound').addEventListener('click', function() {
+                var report = getFoundReport();
+                if (report) {
+                    exportSingleReportExcel(report);
+                } else {
+                    showToast('No report found. Please search first.', 'error');
+                }
+            });
+
+            document.getElementById('reprintPdfFound').addEventListener('click', function() {
+                var report = getFoundReport();
+                if (report) {
+                    exportSingleReportPdf(report);
+                } else {
+                    showToast('No report found. Please search first.', 'error');
+                }
+            });
+
+            document.getElementById('reprintWordFound').addEventListener('click', function() {
+                var report = getFoundReport();
+                if (report) {
+                    exportSingleReportWord(report);
+                } else {
+                    showToast('No report found. Please search first.', 'error');
+                }
+            });
+
+            document.getElementById('reprintPrintFound').addEventListener('click', function() {
+                var report = getFoundReport();
+                if (report) {
+                    printSingleReport(report);
+                } else {
+                    showToast('No report found. Please search first.', 'error');
+                }
+            });
+
+            // ===== SINGLE REPORT EXPORT FUNCTIONS =====
+            function exportSingleReportExcel(report) {
+                var data = [
+                    ['Report ID', report.reportId || 'N/A'],
+                    ['Date', report.date || 'N/A'],
+                    ['Salesman', report.salesman || 'N/A'],
+                    ['Vehicle No.', report.vehicle || 'N/A'],
+                    ['Mobile', report.mobile || 'N/A'],
+                    ['Exit Time', report.exitTime || 'N/A'],
+                    [],
+                    ['SL', 'Customer Name', 'Address', 'Raw CS Qty']
+                ];
+                if (report.rows) {
+                    for (var i = 0; i < report.rows.length; i++) {
+                        var row = report.rows[i];
+                        data.push([i + 1, row.outlet || '', row.address || '', parseInt(row.raw) || 0]);
+                    }
+                }
+                data.push([]);
+                data.push(['Total Raw CS', '', '', report.totalRaw || '0']);
+
+                var wb = XLSX.utils.book_new();
+                var ws = XLSX.utils.aoa_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, 'Pickup Report');
+                XLSX.writeFile(wb, 'Report_' + (report.reportId || 'export') + '.xlsx');
+                showToast('Excel exported successfully!', 'success');
+            }
+
+            function exportSingleReportPdf(report) {
+                var jsPDF = window.jspdf.jsPDF;
+                var doc = new jsPDF('p', 'mm', 'a4');
+                var y = 20;
+                doc.setFontSize(16);
+                doc.text('Transcom Beverages - Pickup Report', 14, y);
+                y += 8;
+                doc.setFontSize(9);
+                doc.text('Report ID: ' + (report.reportId || 'N/A'), 14, y);
+                doc.text('Date: ' + (report.date || 'N/A'), 14, y + 5);
+                doc.text('Salesman: ' + (report.salesman || 'N/A'), 14, y + 10);
+                doc.text('Vehicle: ' + (report.vehicle || 'N/A'), 14, y + 15);
+                y += 20;
+                doc.setFontSize(8);
+                doc.text('SL', 14, y);
+                doc.text('Customer', 30, y);
+                doc.text('Address', 80, y);
+                doc.text('Qty', 140, y);
+                y += 3;
+                doc.line(14, y, 195, y);
+                y += 4;
+                var total = 0;
+                if (report.rows) {
+                    for (var i = 0; i < report.rows.length; i++) {
+                        if (y > 270) { doc.addPage();
+                            y = 20; }
+                        var row = report.rows[i];
+                        var qty = parseInt(row.raw) || 0;
+                        total += qty;
+                        doc.text(String(i + 1), 14, y);
+                        doc.text(String(row.outlet || '').substring(0, 25), 30, y);
+                        doc.text(String(row.address || '').substring(0, 30), 80, y);
+                        doc.text(String(qty), 140, y);
+                        y += 5;
+                    }
+                }
+                y += 4;
+                doc.line(14, y, 195, y);
+                y += 4;
+                doc.setFontSize(10);
+                doc.text('Total Raw CS: ' + total, 14, y);
+                doc.save('Report_' + (report.reportId || 'export') + '.pdf');
+                showToast('PDF exported successfully!', 'success');
+            }
+
+            function exportSingleReportWord(report) {
+                var html =
+                    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Pickup Report</title><style>body { font-family: "Segoe UI", Arial, sans-serif; padding: 30px; } h1 { color: #1a3a5a; } .header-info { margin: 10px 0; } .header-info td { padding: 3px 10px; } table { border-collapse: collapse; width: 100%; margin-top: 10px; } th { background: #1a3a5a; color: white; padding: 6px 10px; text-align: left; } td { padding: 4px 10px; border: 1px solid #ccc; } .total-row { background: #e0e8f0; font-weight: bold; } .report-id { color: #b8860b; font-weight: bold; }</style></head><body><h1>Transcom Beverages - Pickup Report</h1><table class="header-info"><tr><td><strong>Report ID:</strong></td><td class="report-id">' +
+                    (report.reportId || 'N/A') +
+                    '</td></tr><tr><td><strong>Date:</strong></td><td>' + (report.date || 'N/A') +
+                    '</td></tr><tr><td><strong>Salesman:</strong></td><td>' + (report.salesman || 'N/A') +
+                    '</td></tr><tr><td><strong>Vehicle No.:</strong></td><td>' + (report.vehicle || 'N/A') +
+                    '</td></tr><tr><td><strong>Mobile:</strong></td><td>' + (report.mobile || 'N/A') +
+                    '</td></tr><tr><td><strong>Exit Time:</strong></td><td>' + (report.exitTime || 'N/A') +
+                    '</td></tr></table><table><tr><th>SL</th><th>Customer Name</th><th>Address</th><th>Raw CS Qty</th></tr>';
+                var total = 0;
+                if (report.rows) {
+                    for (var i = 0; i < report.rows.length; i++) {
+                        var row = report.rows[i];
+                        var qty = parseInt(row.raw) || 0;
+                        total += qty;
+                        html += '<tr><td>' + (i + 1) + '</td><td>' + (row.outlet || '') + '</td><td>' + (row
+                            .address || '') + '</td><td style="text-align:center;">' + qty + '</td></tr>';
+                    }
+                }
+                html +=
+                    '<tr class="total-row"><td colspan="3" style="text-align:right;">Total Raw CS</td><td style="text-align:center;">' +
+                    total + '</td></tr></table></body></html>';
+                var blob = new Blob([html], { type: 'application/msword' });
+                var link = document.createElement('a');
+                link.download = 'Report_' + (report.reportId || 'export') + '.doc';
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                URL.revokeObjectURL(link.href);
+                showToast('Word document exported successfully!', 'success');
+            }
+
+            function printSingleReport(report) {
+                var printWindow = window.open('', '_blank', 'width=800,height=600');
+                if (!printWindow) {
+                    showToast('Please allow popups for printing.', 'error');
+                    return;
+                }
+                var rowsHtml = '';
+                var total = 0;
+                if (report.rows) {
+                    for (var i = 0; i < report.rows.length; i++) {
+                        var row = report.rows[i];
+                        var qty = parseInt(row.raw) || 0;
+                        total += qty;
+                        rowsHtml += '<tr><td>' + (i + 1) + '</td><td>' + (row.outlet || '') + '</td><td>' + (row
+                            .address || '') + '</td><td style="text-align:center;">' + qty + '</td></tr>';
+                    }
+                }
+
+                printWindow.document.write(
+                    '<html><head><title>Pickup Report - ' + (report.reportId || 'N/A') +
+                    '</title><style>body { font-family: "Segoe UI", Arial, sans-serif; padding: 30px; color: #1a1a2e; } h1 { color: #1a3a5a; } .header-info { margin: 10px 0; } .header-info td { padding: 3px 10px; } table { border-collapse: collapse; width: 100%; margin-top: 10px; } th { background: #1a3a5a; color: white; padding: 6px 10px; text-align: left; } td { padding: 4px 10px; border: 1px solid #ccc; } .total-row { background: #e0e8f0; font-weight: bold; } .report-id { color: #b8860b; font-weight: bold; } .footer { margin-top: 20px; color: #666; font-size: 12px; text-align: center; }</style></head><body><h1>Transcom Beverages - Pickup Report</h1><table class="header-info"><tr><td><strong>Report ID:</strong></td><td class="report-id">' +
+                    (report.reportId || 'N/A') +
+                    '</td></tr><tr><td><strong>Date:</strong></td><td>' + (report.date || 'N/A') +
+                    '</td></tr><tr><td><strong>Salesman:</strong></td><td>' + (report.salesman || 'N/A') +
+                    '</td></tr><tr><td><strong>Vehicle No.:</strong></td><td>' + (report.vehicle || 'N/A') +
+                    '</td></tr><tr><td><strong>Mobile:</strong></td><td>' + (report.mobile || 'N/A') +
+                    '</td></tr><tr><td><strong>Exit Time:</strong></td><td>' + (report.exitTime || 'N/A') +
+                    '</td></tr></table><table><tr><th>SL</th><th>Customer Name</th><th>Address</th><th>Raw CS Qty</th></tr>' +
+                    rowsHtml +
+                    '<tr class="total-row"><td colspan="3" style="text-align:right;">Total Raw CS</td><td style="text-align:center;">' +
+                    total +
+                    '</td></tr></table><div class="footer">Printed on ' + new Date().toLocaleString() +
+                    '</div></body></html>'
+                );
+                printWindow.document.close();
+                setTimeout(function() {
+                    printWindow.print();
+                }, 500);
+                showToast('Print dialog opened', 'info');
+            }
+
+            // ===== QUICK ACTIONS =====
+            document.getElementById('refreshReportsBtn').addEventListener('click', function() {
+                renderRecentReports();
+                showToast('Reports list refreshed!', 'success');
+            });
+
+            document.getElementById('exportAllExcelBtn').addEventListener('click', function() {
+                var reports = getReports();
+                if (reports.length === 0) {
+                    showToast('No reports to export.', 'error');
+                    return;
+                }
+                var data = [
+                    ['Report ID', 'Date', 'Salesman', 'Vehicle No.', 'Total Items', 'Total CS']
+                ];
+                for (var i = 0; i < reports.length; i++) {
+                    var r = reports[i];
+                    data.push([
+                        r.reportId || 'N/A',
+                        r.date || 'N/A',
+                        r.salesman || 'N/A',
+                        r.vehicle || 'N/A',
+                        r.rows ? r.rows.length : 0,
+                        r.totalRaw || '0'
+                    ]);
+                }
+                var wb = XLSX.utils.book_new();
+                var ws = XLSX.utils.aoa_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, 'All Reports');
+                XLSX.writeFile(wb, 'All_Reports_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+                showToast('All reports exported to Excel!', 'success');
+            });
+
+            document.getElementById('exportAllPdfBtn').addEventListener('click', function() {
+                var reports = getReports();
+                if (reports.length === 0) {
+                    showToast('No reports to export.', 'error');
+                    return;
+                }
+                var jsPDF = window.jspdf.jsPDF;
+                var doc = new jsPDF('p', 'mm', 'a4');
+                var y = 20;
+                doc.setFontSize(16);
+                doc.text('Transcom Beverages - All Pickup Reports', 14, y);
+                y += 8;
+                doc.setFontSize(9);
+                doc.text('Generated: ' + new Date().toLocaleString(), 14, y);
+                y += 10;
+                doc.setFontSize(8);
+                doc.text('Report ID', 14, y);
+                doc.text('Date', 45, y);
+                doc.text('Salesman', 65, y);
+                doc.text('Vehicle', 95, y);
+                doc.text('Items', 125, y);
+                doc.text('Total CS', 145, y);
+                y += 3;
+                doc.line(14, y, 180, y);
+                y += 4;
+                for (var i = 0; i < reports.length; i++) {
+                    var r = reports[i];
+                    if (y > 270) { doc.addPage();
+                        y = 20; }
+                    doc.text(r.reportId || 'N/A', 14, y);
+                    doc.text(r.date || 'N/A', 45, y);
+                    doc.text(String(r.salesman || 'N/A').substring(0, 15), 65, y);
+                    doc.text(String(r.vehicle || 'N/A').substring(0, 15), 95, y);
+                    doc.text(String(r.rows ? r.rows.length : 0), 125, y);
+                    doc.text(String(r.totalRaw || '0'), 145, y);
+                    y += 5;
+                }
+                doc.save('All_Reports_' + new Date().toISOString().slice(0, 10) + '.pdf');
+                showToast('All reports exported to PDF!', 'success');
+            });
+
+            // ===== INIT =====
+            var dateInput = document.getElementById('pickupDate');
+            if (!dateInput.value) {
+                var today = new Date().toISOString().split('T')[0];
+                dateInput.value = today;
+            }
+
+            loadUsers();
+            loadLogs();
+            var todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('reportDateFrom').value = todayStr;
+            document.getElementById('reportDateTo').value = todayStr;
+            generateReportId();
+
+            setTimeout(function() {
+                if (document.getElementById('reportsPanel').classList.contains('active')) {
+                    renderReportPreview();
+                    renderRecentReports();
+                }
+            }, 500);
+
+        })();
+    </script>
+</body>
+</html>
